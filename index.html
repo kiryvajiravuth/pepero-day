@@ -183,6 +183,10 @@ input[type=range]{width:100%; accent-color:var(--red)}
       <div class="swatches" id="sws"><input type="color" id="bgPick" value="#ffe3e8" aria-label="배경 색 직접 고르기"></div>
     </div>
 
+    <div class="full">
+      <input type="text" id="ending" maxlength="40" placeholder="마지막 문구 (선택)" aria-label="마지막 문구">
+    </div>
+
     <div class="who">
       <h2>왼쪽 캐릭터 A</h2>
       <input type="text" id="inA" value="A" maxlength="12" aria-label="A 이름">
@@ -521,7 +525,8 @@ function render(){
   $('imgA').style.objectPosition = flip.A ? 'left center' : 'right center';
   $('imgB').style.objectPosition = flip.B ? 'right center' : 'left center';
   updateThoughts('A'); updateThoughts('B');
-  if (k >= 1 && !S.popped){ S.popped = true; msg.textContent = `${$('inA').value || 'A'} 💋 ${$('inB').value || 'B'}  해피 빼빼로데이!`; hearts(eA); kissSound(); }
+  if (k >= 1 && !S.popped){ S.popped = true; msg.textContent = $('ending').value.trim() ||
+      `${$('inA').value || 'A'} 💋 ${$('inB').value || 'B'}  해피 빼빼로데이!`; hearts(eA); kissSound(); }
   msg.classList.toggle('show', k >= 1);
   fxc.setTransform(dpr, 0, 0, dpr, 0, 0); fxc.clearRect(0, 0, W, H); drawParticles(fxc);
   if (rec) drawFrame(rec.ctx, rec.sc);
