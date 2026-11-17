@@ -573,7 +573,7 @@ function simStep(dt){
         S.cAcc = 0; S.cNext = .65 + Math.random() * .45;
       }
     }
-    if (S.p >= 1){ S.k = 1; S.playing = false; setPlayBtn(false); }
+    if (S.p >= 1){ S.k = 1; S.playing = false; stopBgm(); setPlayBtn(false); }
   }
   if (S.popped) S.hopT += dt;
   stepParticles(dt); render();
@@ -890,7 +890,7 @@ function startRealtime(withAudio){
         else vmsg('영상이 만들어지지 않았어요. 이 브라우저에서는 영상 저장이 어려울 수 있어요. 사진 저장을 쓰거나 크롬·사파리로 열어 주세요.');
         return;
       }
-      vmsg(was.withAudio && !was.useAudio && soundOn ? '이 브라우저에서는 소리 없이 저장됐어요.' : '');
+      vmsg(was.withAudio && !was.useAudio && (soundOn || (bgmOn && bgmBuf)) ? '이 브라우저에서는 소리 없이 저장됐어요.' : '');
       showVideo(blob, type.includes('mp4') ? 'mp4' : 'webm');
     };
     rec = { mr, ctx:c, sc:cv.width / W, holdUntil:0, aborted:false, useAudio, withAudio };
