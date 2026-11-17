@@ -269,7 +269,7 @@ function heartImg(col, face){
   ${faceSvg}</svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
-function refreshHeart(k){ if (!custom[k]){ baseSprite[k] = heartImg(heartCol[k], kao[k]); activeSprite[k] = null; updateSprite(k, S.p); } }
+function refreshHeart(k){ if (!custom[k]){ baseSprite[k] = heartImg(heartCol[k], kao[k]); activeSprite[k] = null; $('img' + k).src = baseSprite[k]; } }
 // 배경이 투명한 이미지는 비어 있는 가장자리를 잘라내서 그림 부분만 꽉 차게 사용
 function cropTransparent(url){
   return new Promise(res => {
