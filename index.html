@@ -195,6 +195,7 @@ input[type=range]{width:100%; accent-color:var(--red)}
       <div class="row">
         <label class="file">이미지 올리기<input type="file" id="fileA" accept="image/*"></label>
         <label class="chk"><input type="checkbox" id="flipA"> 좌우 반전</label>
+        <label class="chk"><input type="checkbox" id="bopA" checked> 먹는 동작</label>
       </div>
       <div class="row"><label for="tiA">속마음 (한 줄에 하나, 3~5개)</label><textarea id="tiA"></textarea></div>
     </div>
@@ -204,6 +205,7 @@ input[type=range]{width:100%; accent-color:var(--red)}
       <div class="row">
         <label class="file">이미지 올리기<input type="file" id="fileB" accept="image/*"></label>
         <label class="chk"><input type="checkbox" id="flipB"> 좌우 반전</label>
+        <label class="chk"><input type="checkbox" id="bopB" checked> 먹는 동작</label>
       </div>
       <div class="row"><label for="tiB">속마음 (한 줄에 하나, 3~5개)</label><textarea id="tiB"></textarea></div>
     </div>
@@ -285,14 +287,14 @@ function cropTransparent(url){
     im.onerror = () => res(url); im.src = url;
   });
 }
-const flip = { A:false, B:false };
+const flip = { A:false, B:false }, bop = { A:true, B:true };
 for (const k of ['A','B']){
   if (DEFAULT_IMG[k]){ custom[k] = true; cropTransparent(DEFAULT_IMG[k]).then(u => { $('img' + k).src = u; }); }
   else refreshHeart(k);
 }
 $('inA').value = DEFAULT_NAME.A; $('inB').value = DEFAULT_NAME.B;
 
-const S = { p:0, k:0, playing:false, last:0, t:0, popped:false, bob:0, tilt:0, cAcc:0, cNext:0, hop:0, hopT:0, th:{A:null,B:null}, lay:{}, kissSound:false, acc:{A:0,B:0} };
+const S = { p:0, k:0, playing:false, last:0, t:0, popped:false, bob:{A:0,B:0}, tilt:0, cAcc:0, cNext:0, hop:0, hopT:0, th:{A:null,B:null}, lay:{}, kissSound:false, acc:{A:0,B:0} };
 let bgColor = '#ffe3e8', floorColor = '#ffc9d3', msgColor = '#c8102e';
 const thoughts = { A:[], B:[] };
 const DEFAULT_THOUGHTS = {
@@ -533,14 +535,15 @@ function render(){
   stick.style.clipPath = `inset(-6px ${len * (1 - m) * p}px -6px ${len * m * p}px)`;
   stick.style.visibility = p >= 1 ? 'hidden' : 'visible';
   const eating = S.playing && p < 1;
-  S.bob = eating ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0; S.tilt = 0;
+  S.bob.A = eating && bop.A ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0;
+  S.bob.B = eating && bop.B ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0; S.tilt = 0;
   const ht = S.hopT;   // 뽀뽀 순간: 이미지만 폴짝 두 번 (이름은 그대로)
   S.hop = (S.popped && ht < .64) ? Math.abs(Math.sin(ht / .32 * Math.PI)) * 18 * (1 - ht / .64 * .4) : 0;
   const rc = cw * REACH * (1 - p);   // 끝에서는 0 → 두 이미지가 딱 붙음
   el.A.style.left = (eA - cw + rc) + 'px';
   el.B.style.left = (eB - rc) + 'px';
-  el.A.style.transform = `translateY(${S.bob}px)`;
-  el.B.style.transform = `translateY(${S.bob}px)`;
+  el.A.style.transform = `translateY(${S.bob.A}px)`;
+  el.B.style.transform = `translateY(${S.bob.B}px)`;
   el.A.firstElementChild.style.transform = el.B.firstElementChild.style.transform = `translateY(${-S.hop}px)`;
   $('imgA').style.transform = flip.A ? 'scaleX(-1)' : '';
   $('imgB').style.transform = flip.B ? 'scaleX(-1)' : '';
@@ -715,7 +718,7 @@ function drawFrame(c, sc = dpr){
 function drawChar(c, k){
   const box = el[k], left = parseFloat(box.style.left), top = parseFloat(box.style.top);
   const picH = ch, img = $('img' + k);
-  c.save(); c.translate(left + cw / 2, top + ch); c.translate(-cw / 2, -ch + S.bob);
+  c.save(); c.translate(left + cw / 2, top + ch); c.translate(-cw / 2, -ch + S.bob[k]);
   if (img.naturalWidth){
     const sc = Math.min(cw / img.naturalWidth, picH / img.naturalHeight), dw = img.naturalWidth * sc, dh = img.naturalHeight * sc;
     c.save(); c.translate(cw / 2 + (k === 'A' ? 1 : -1) * (cw / 2 - dw / 2), picH / 2 - S.hop); if (flip[k]) c.scale(-1, 1); c.drawImage(img, -dw / 2, -dh / 2, dw, dh); c.restore();
@@ -933,6 +936,8 @@ $('bgmToggle').onclick = () => {
 document.querySelectorAll('input[name=choc]').forEach(r => r.addEventListener('change', () => { chocSide = r.value; updateLabels(); }));
 $('flipA').onchange = e => { flip.A = e.target.checked; render(); };
 $('flipB').onchange = e => { flip.B = e.target.checked; render(); };
+$('bopA').onchange = e => { bop.A = e.target.checked; render(); };
+$('bopB').onchange = e => { bop.B = e.target.checked; render(); };
 for (const k of ['A','B']) $('file' + k).onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   custom[k] = true; cropTransparent(URL.createObjectURL(f)).then(u => { $('img' + k).src = u; });
