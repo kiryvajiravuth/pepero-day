@@ -160,6 +160,8 @@ input[type=range]{width:100%; accent-color:var(--red)}
   </div>
   <div class="bar second">
     <button id="snd" class="sub">🔊 효과음 켜짐</button>
+    <label class="file">🎵 배경음 올리기<input type="file" id="bgm" accept="audio/*"></label>
+    <button id="bgmToggle" class="sub off" disabled>🎵 배경음 꺼짐</button>
     <button id="shot" class="sub">📷 사진 저장</button>
     <button id="vid" class="sub">🎬 영상 저장</button>
   </div>
@@ -360,6 +362,7 @@ function drawParticles(c){
 
 /* ---------- 소리 ---------- */
 let ac = null, master = null, recDest = null, soundOn = true;
+let bgmBuf = null, bgmSource = null, bgmOn = false;
 function initAudio(){
   if (!ac){
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -368,6 +371,26 @@ function initAudio(){
   }
   if (ac.state === 'suspended'){ try { const r = ac.resume(); if (r && r.catch) r.catch(() => {}); } catch (e){} }
   loadSounds();
+}
+async function loadBgm(file){
+  initAudio();
+  const buf = await ac.decodeAudioData(await file.arrayBuffer());
+  bgmBuf = buf; bgmOn = true;
+  $('bgmToggle').disabled = false;
+  $('bgmToggle').textContent = '🎵 배경음 켜짐';
+  if (S.playing) startBgm();
+}
+function stopBgm(){
+  if (!bgmSource) return;
+  try { bgmSource.stop(); } catch (e){}
+  bgmSource = null;
+}
+function startBgm(){
+  if (!bgmBuf || !bgmOn || !ac) return;
+  stopBgm();
+  bgmSource = ac.createBufferSource();
+  bgmSource.buffer = bgmBuf; bgmSource.loop = true;
+  bgmSource.connect(master); bgmSource.start();
 }
 
 /* ---------- 효과음 파일 (crunch.mp3 / kiss.mp3 를 한 입 단위로 잘라 내장) ---------- */
@@ -570,12 +593,13 @@ function setPlayBtn(on){ $('play').textContent = on ? '❚❚ 정지' : '▶ 재
 function start(){
   if (S.p >= 1 && S.k >= 1) reset();
   if (S.playing) return;
-  initAudio(); S.playing = true; S.cAcc = 0; S.cNext = 0;
+  initAudio(); startBgm(); S.playing = true; S.cAcc = 0; S.cNext = 0;
   setPlayBtn(true); kick();
 }
-function pause(){ if (!S.playing) return; S.playing = false; setPlayBtn(false); if (rec) abortRec(); }
+function pause(){ if (!S.playing) return; S.playing = false; stopBgm(); setPlayBtn(false); if (rec) abortRec(); }
 function reset(){
   if (rec) abortRec();
+  stopBgm();
   S.playing = false; S.p = 0; S.k = 0; S.popped = false; S.hopT = 0; S.t = 0; particles = [];
   setPlayBtn(false); render();
 }
@@ -745,10 +769,10 @@ const nextTick = () => new Promise(r => setTimeout(r, 0));
 const FPS = 30;
 async function recordOffline(progress){
   if (!window.VideoEncoder || !window.VideoFrame) throw new Error('webcodecs');
-  const wantAudio = soundOn;
+  const wantAudio = soundOn || (bgmOn && bgmBuf);
   if (wantAudio && !(window.AudioEncoder && window.AudioData && window.OfflineAudioContext)) throw new Error('audio-webcodecs');
   await loadMuxer();
-  if (wantAudio){ await loadSounds(); if (!crunchBuf || !kissBuf) throw new Error('sound'); }
+  if (soundOn){ await loadSounds(); if (!crunchBuf || !kissBuf) throw new Error('sound'); }
 
   const { cv, c } = recCanvas(), w = cv.width, h = cv.height;
   let vcfg = null;
@@ -798,6 +822,10 @@ async function recordOffline(progress){
   if (wantAudio){
     const total = frame / FPS, oc = new OfflineAudioContext(2, Math.ceil(total * SR), SR);
     const om = oc.createGain(); om.gain.value = .9; om.connect(oc.destination);
+    if (bgmOn && bgmBuf){
+      const src = oc.createBufferSource(); src.buffer = bgmBuf; src.loop = true;
+      src.connect(om); src.start(0); src.stop(total);
+    }
     for (const e of offl.ev){
       const buf = e.kind === 'c' ? crunchBuf : kissBuf;
       schedClip(oc, om, e.t, buf, e.off, e.dur || buf.duration, e.gain, e.pan, e.fade, e.rate);
@@ -842,7 +870,7 @@ function startRealtime(withAudio){
   reset(); initAudio();
   try {
     const { cv, c } = recCanvas(), stream = cv.captureStream(30);
-    const useAudio = !!(withAudio && soundOn && recDest && recDest.stream.getAudioTracks().length);
+    const useAudio = !!(withAudio && (soundOn || (bgmOn && bgmBuf)) && recDest && recDest.stream.getAudioTracks().length);
     if (useAudio) recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
     let mr = null, mime = '';
     const sup = window.MediaRecorder.isTypeSupported ? MIMES.filter(t => MediaRecorder.isTypeSupported(t)) : [];
@@ -891,6 +919,15 @@ $('rclose').onclick = () => { $('result').hidden = true; $('rv').pause(); };
 $('play').onclick = () => S.playing ? pause() : start(); $('reset').onclick = reset;
 $('snd').onclick = () => {
   soundOn = !soundOn; $('snd').textContent = soundOn ? '🔊 효과음 켜짐' : '🔇 효과음 꺼짐'; $('snd').classList.toggle('off', !soundOn);
+};
+$('bgm').onchange = e => {
+  const file = e.target.files[0];
+  if (file) loadBgm(file).catch(() => vmsg('배경음을 읽지 못했어요.'));
+};
+$('bgmToggle').onclick = () => {
+  bgmOn = !bgmOn;
+  $('bgmToggle').textContent = bgmOn ? '🎵 배경음 켜짐' : '🎵 배경음 꺼짐';
+  if (S.playing) bgmOn ? startBgm() : stopBgm();
 };
 ['inA','inB','share','spd'].forEach(id => $(id).addEventListener('input', () => { updateLabels(); render(); }));
 document.querySelectorAll('input[name=choc]').forEach(r => r.addEventListener('change', () => { chocSide = r.value; updateLabels(); }));
