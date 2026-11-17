@@ -376,9 +376,16 @@ function updateLabels(){
 }
 const edges = () => {
   const pa = S.cp.A, pb = S.cp.B;
-  const a = pa + (pa > pb ? (1 - m) / m * (pa - pb) : 0);
-  const b = pb + (pb > pa ? m / (1 - m) * (pb - pa) : 0);
-  return [xL + len * m * a, xR - len * (1 - m) * b];
+  const baseA = xL + len * m * pa, baseB = xR - len * (1 - m) * pb;
+  if (pb > pa){
+    const tieB = xR - len * (1 - m) * pa;
+    return [baseA, tieB + (baseA - tieB) * (pb - pa) / Math.max(1e-6, 1 - pa)];
+  }
+  if (pa > pb){
+    const tieA = xL + len * m * pb;
+    return [tieA + (baseB - tieA) * (pa - pb) / Math.max(1e-6, 1 - pb), baseB];
+  }
+  return [baseA, baseB];
 };
 
 /* ---------- Particles (crumbs · hearts) ---------- */
