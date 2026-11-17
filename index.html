@@ -464,7 +464,7 @@ function loadSounds(){
   return sndReady;
 }
 const REC_SOUND_DELAY = 0;   // (only used by the fallback realtime recorder) delay Sound by this many seconds
-let offl = null;             // 영상 저장 중이면 { t:current frame time, ev:[Sound events] } — record timing instead of playing Sound immediately
+let offl = null;             // During video export, store { t:current frame time, ev:[Sound events] } and record timing instead of playing Sound immediately
 function schedClip(c, dest, t, buf, offset, dur, gain, pan, fade, rate){
   const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
   const real = dur / rate, gn = c.createGain(); gn.gain.setValueAtTime(gain, t);
