@@ -159,7 +159,7 @@ input[type=range]{width:100%; accent-color:var(--red)}
     <button id="reset">↺ 처음으로</button>
   </div>
   <div class="bar second">
-    <button id="snd" class="sub">🔊 소리 켜짐</button>
+    <button id="snd" class="sub">🔊 효과음 켜짐</button>
     <button id="shot" class="sub">📷 사진 저장</button>
     <button id="vid" class="sub">🎬 영상 저장</button>
   </div>
@@ -890,7 +890,7 @@ $('rclose').onclick = () => { $('result').hidden = true; $('rv').pause(); };
 /* ---------- 컨트롤 ---------- */
 $('play').onclick = () => S.playing ? pause() : start(); $('reset').onclick = reset;
 $('snd').onclick = () => {
-  soundOn = !soundOn; $('snd').textContent = soundOn ? '🔊 소리 켜짐' : '🔇 소리 꺼짐'; $('snd').classList.toggle('off', !soundOn);
+  soundOn = !soundOn; $('snd').textContent = soundOn ? '🔊 효과음 켜짐' : '🔇 효과음 꺼짐'; $('snd').classList.toggle('off', !soundOn);
 };
 ['inA','inB','share','spd'].forEach(id => $(id).addEventListener('input', () => { updateLabels(); render(); }));
 document.querySelectorAll('input[name=choc]').forEach(r => r.addEventListener('change', () => { chocSide = r.value; updateLabels(); }));
