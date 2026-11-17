@@ -269,7 +269,7 @@ function heartImg(col, face){
   ${faceSvg}</svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
-function refreshHeart(k){ if (!custom[k]) $('img' + k).src = heartImg(heartCol[k], kao[k]); }
+function refreshHeart(k){ if (!custom[k]){ baseSprite[k] = heartImg(heartCol[k], kao[k]); activeSprite[k] = null; updateSprite(k, S.p); } }
 // 배경이 투명한 이미지는 비어 있는 가장자리를 잘라내서 그림 부분만 꽉 차게 사용
 function cropTransparent(url){
   return new Promise(res => {
@@ -563,7 +563,7 @@ function drawBubble(c, k){
 
 /* ---------- 화면 그리기 ---------- */
 function render(){
-  const [eA, eB], p = S.p, k = S.k;
+  const [eA, eB] = edges(), p = S.p, k = S.k;
   updateSprite('A', p); updateSprite('B', p);
   stick.style.clipPath = `inset(-6px ${len * (1 - m) * p}px -6px ${len * m * p}px)`;
   stick.style.visibility = p >= 1 ? 'hidden' : 'visible';
