@@ -630,6 +630,7 @@ function simStep(dt){
       }
     }
     if (S.cp.A >= 1 && S.cp.B >= 1){ S.k = 1; S.playing = false; stopBgm(); setPlayBtn(false); }
+  }
   if (S.popped) S.hopT += dt;
   stepParticles(dt); render();
 }
