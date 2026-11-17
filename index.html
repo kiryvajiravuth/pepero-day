@@ -343,7 +343,7 @@ for (const k of ['A','B']){
 }
 $('inA').value = DEFAULT_NAME.A; $('inB').value = DEFAULT_NAME.B;
 
-const S = { p:0, cp:{A:0,B:0}, k:0, playing:false, last:0, t:0, popped:false, bob:{A:0,B:0}, tilt:0, cAcc:0, cNext:0, hop:0, hopT:0, th:{A:null,B:null}, lay:{}, kissSound:false, acc:{A:0,B:0} };
+const S = { p:0, cp:{A:0,B:0}, k:0, playing:false, last:0, t:0, popped:false, contacting:false, contactT:0, bob:{A:0,B:0}, tilt:0, cAcc:0, cNext:0, hop:0, hopT:0, th:{A:null,B:null}, lay:{}, kissSound:false, acc:{A:0,B:0} };
 let bgColor = '#ffe3e8', floorColor = '#ffc9d3', msgColor = '#c8102e';
 const thoughts = { A:[], B:[] };
 const DEFAULT_THOUGHTS = {
@@ -582,7 +582,6 @@ function drawBubble(c, k){
 function render(){
   const [eA, eB] = edges(), pa = S.cp.A, pb = S.cp.B, k = S.k;
   updateTimeline('A', S.t); updateTimeline('B', S.t);
-  const p = Math.min(pa, pb);
   stick.style.clipPath = `inset(-6px ${len * (1 - m) * pb}px -6px ${len * m * pa}px)`;
   stick.style.visibility = pa >= 1 && pb >= 1 ? 'hidden' : 'visible';
   const eating = S.playing && (pa < 1 || pb < 1);
@@ -590,9 +589,9 @@ function render(){
   S.bob.B = eating && !paused.B && pb < 1 && bop.B ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0; S.tilt = 0;
   const ht = S.hopT;   // Kiss moment: images hop twice (names stay still)
   S.hop = (S.popped && ht < .64) ? Math.abs(Math.sin(ht / .32 * Math.PI)) * 18 * (1 - ht / .64 * .4) : 0;
-  const rc = cw * REACH * (1 - p);   // At the end, 0 → the images meet
-  el.A.style.left = (eA - cw + rc) + 'px';
-  el.B.style.left = (eB - rc) + 'px';
+  const rcA = cw * REACH * (1 - pa), rcB = cw * REACH * (1 - pb);
+  el.A.style.left = (eA - cw + rcA) + 'px';
+  el.B.style.left = (eB - rcB) + 'px';
   el.A.style.transform = `translateY(${S.bob.A}px)`;
   el.B.style.transform = `translateY(${S.bob.B}px)`;
   el.A.firstElementChild.style.transform = el.B.firstElementChild.style.transform = `translateY(${-S.hop}px)`;
@@ -630,7 +629,11 @@ function simStep(dt){
         S.cAcc = 0; S.cNext = .65 + Math.random() * .45;
       }
     }
-    if (S.cp.A >= 1 && S.cp.B >= 1){ S.k = 1; S.playing = false; stopBgm(); setPlayBtn(false); }
+    if (S.cp.A >= 1 && S.cp.B >= 1){ S.playing = false; S.contacting = true; S.contactT = 0; stopBgm(); setPlayBtn(false); }
+  }
+  if (S.contacting){
+    S.contactT += dt;
+    if (S.contactT >= .5){ S.contacting = false; S.k = 1; }
   }
   if (S.popped) S.hopT += dt;
   stepParticles(dt); render();
@@ -642,7 +645,7 @@ function tick(now){
   simStep(dt);
   if (rec && was && !S.playing) rec.holdUntil = now + 1500;
   const holding = rec && (rec.holdUntil === 0 || now < rec.holdUntil);
-  if (S.playing || particles.length || holding || (S.popped && S.hopT < .9)){ requestAnimationFrame(tick); }
+  if (S.playing || S.contacting || particles.length || holding || (S.popped && S.hopT < .9)){ requestAnimationFrame(tick); }
   else { looping = false; if (rec) finishRec(); }
 }
 function kick(){ if (!looping){ looping = true; S.last = performance.now(); requestAnimationFrame(tick); } }
@@ -657,7 +660,7 @@ function pause(){ if (!S.playing) return; S.playing = false; stopBgm(); setPlayB
 function reset(){
   if (rec) abortRec();
   stopBgm();
-  S.playing = false; S.p = 0; S.cp.A = 0; S.cp.B = 0; S.k = 0; S.popped = false; S.hopT = 0; S.t = 0; particles = [];
+  S.playing = false; S.p = 0; S.cp.A = 0; S.cp.B = 0; S.k = 0; S.popped = false; S.contacting = false; S.contactT = 0; S.hopT = 0; S.t = 0; particles = [];
   setPlayBtn(false); render();
 }
 
