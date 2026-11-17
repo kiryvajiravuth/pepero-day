@@ -374,7 +374,12 @@ function updateLabels(){
   $('spdVal').textContent = (+$('spd').value).toFixed(1) + 'x speed';
   stick.classList.toggle('rev', chocSide === 'B');
 }
-const edges = () => [xL + len * m * S.cp.A, xR - len * (1 - m) * S.cp.B];
+const edges = () => {
+  const pa = S.cp.A, pb = S.cp.B;
+  const a = pa + (pa > pb ? (1 - m) / m * (pa - pb) : 0);
+  const b = pb + (pb > pa ? m / (1 - m) * (pb - pa) : 0);
+  return [xL + len * m * a, xR - len * (1 - m) * b];
+};
 
 /* ---------- Particles (crumbs · hearts) ---------- */
 function isChoc(e){ const f = (e - xL) / len; return chocSide === 'A' ? f < CHOC : f > 1 - CHOC; }
