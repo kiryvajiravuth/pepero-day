@@ -120,6 +120,11 @@ input[type=text]{
 .chk{display:flex; align-items:center; gap:8px; font-size:15px}
 .full{grid-column:1/-1}
 input[type=range]{width:100%; accent-color:var(--red)}
+.sprites{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sprite-event{display:flex;align-items:center;gap:6px}
+.sprite-event .file{flex:1;min-width:0}
+.sprite-event input[type=number]{font:inherit;width:64px;padding:7px 8px;border:2px solid #f2b8c2;border-radius:10px}
+.sprite-event button{font:inherit;border:0;border-radius:10px;background:var(--pink);color:var(--red);padding:8px 11px;cursor:pointer}
 .ends{display:flex; justify-content:space-between; font-size:13px; color:#8a6a62}
 .seg{display:flex; gap:8px}
 .seg label{
@@ -198,6 +203,8 @@ input[type=range]{width:100%; accent-color:var(--red)}
         <label class="chk"><input type="checkbox" id="bopA" checked> 먹는 동작</label>
       </div>
       <div class="row"><label for="tiA">속마음 (한 줄에 하나, 3~5개)</label><textarea id="tiA"></textarea></div>
+      <div class="sprites" id="spritesA"></div>
+      <button type="button" class="sub" id="addSpriteA">+ 이미지 이벤트</button>
     </div>
     <div class="who">
       <h2>오른쪽 캐릭터 B</h2>
@@ -208,6 +215,8 @@ input[type=range]{width:100%; accent-color:var(--red)}
         <label class="chk"><input type="checkbox" id="bopB" checked> 먹는 동작</label>
       </div>
       <div class="row"><label for="tiB">속마음 (한 줄에 하나, 3~5개)</label><textarea id="tiB"></textarea></div>
+      <div class="sprites" id="spritesB"></div>
+      <button type="button" class="sub" id="addSpriteB">+ 이미지 이벤트</button>
     </div>
 
     <div class="full">
@@ -288,8 +297,31 @@ function cropTransparent(url){
   });
 }
 const flip = { A:false, B:false }, bop = { A:true, B:true };
+const spriteEvents = { A:[], B:[] }, baseSprite = { A:null, B:null }, activeSprite = { A:null, B:null };
+function updateSprite(k, progress){
+  const events = spriteEvents[k].filter(x => x.url && progress >= x.at).sort((a, b) => a.at - b.at);
+  const src = events.length ? events[events.length - 1].url : (baseSprite[k] || heartImg(heartCol[k], kao[k]));
+  if (src === activeSprite[k]) return;
+  activeSprite[k] = src; $('img' + k).src = src;
+}
+function addSpriteEvent(k){
+  const row = document.createElement('div'), event = { at:50, url:'' };
+  row.className = 'sprite-event';
+  row.innerHTML = `<label class="file">이미지<input type="file" accept="image/*"></label><input type="number" min="0" max="100" value="50" aria-label="${k} 이미지 교체 시점"><span>%</span><button type="button" aria-label="이미지 이벤트 삭제">×</button>`;
+  $("sprites" + k).appendChild(row); spriteEvents[k].push(event);
+  const file = row.querySelector('input[type=file]'), at = row.querySelector('input[type=number]');
+  file.onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    cropTransparent(URL.createObjectURL(f)).then(u => { event.url = u; updateSprite(k, S.p); render(); });
+  };
+  at.oninput = e => { event.at = Math.max(0, Math.min(100, +e.target.value || 0)) / 100; updateSprite(k, S.p); render(); };
+  row.querySelector('button').onclick = () => {
+    spriteEvents[k].splice(spriteEvents[k].indexOf(event), 1); row.remove(); updateSprite(k, S.p); render();
+  };
+  event.at = .5;
+}
 for (const k of ['A','B']){
-  if (DEFAULT_IMG[k]){ custom[k] = true; cropTransparent(DEFAULT_IMG[k]).then(u => { $('img' + k).src = u; }); }
+  if (DEFAULT_IMG[k]){ custom[k] = true; cropTransparent(DEFAULT_IMG[k]).then(u => { baseSprite[k] = u; updateSprite(k, S.p); }); }
   else refreshHeart(k);
 }
 $('inA').value = DEFAULT_NAME.A; $('inB').value = DEFAULT_NAME.B;
@@ -531,7 +563,8 @@ function drawBubble(c, k){
 
 /* ---------- 화면 그리기 ---------- */
 function render(){
-  const [eA, eB] = edges(), p = S.p, k = S.k;
+  const [eA, eB], p = S.p, k = S.k;
+  updateSprite('A', p); updateSprite('B', p);
   stick.style.clipPath = `inset(-6px ${len * (1 - m) * p}px -6px ${len * m * p}px)`;
   stick.style.visibility = p >= 1 ? 'hidden' : 'visible';
   const eating = S.playing && p < 1;
@@ -938,9 +971,11 @@ $('flipA').onchange = e => { flip.A = e.target.checked; render(); };
 $('flipB').onchange = e => { flip.B = e.target.checked; render(); };
 $('bopA').onchange = e => { bop.A = e.target.checked; render(); };
 $('bopB').onchange = e => { bop.B = e.target.checked; render(); };
+$('addSpriteA').onclick = () => addSpriteEvent('A');
+$('addSpriteB').onclick = () => addSpriteEvent('B');
 for (const k of ['A','B']) $('file' + k).onchange = e => {
   const f = e.target.files[0]; if (!f) return;
-  custom[k] = true; cropTransparent(URL.createObjectURL(f)).then(u => { $('img' + k).src = u; });
+  custom[k] = true; cropTransparent(URL.createObjectURL(f)).then(u => { baseSprite[k] = u; activeSprite[k] = null; updateSprite(k, S.p); render(); });
 };
 window.addEventListener('resize', () => { if (rec) return; metrics(); render(); });
 document.fonts && document.fonts.ready.then(() => { S.lay = {}; metrics(); render(); });
