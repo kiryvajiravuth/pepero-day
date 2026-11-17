@@ -464,7 +464,7 @@ function loadSounds(){
   return sndReady;
 }
 const REC_SOUND_DELAY = 0;   // (only used by the fallback realtime recorder) delay Sound by this many seconds
-let offl = null;             // 영상 저장 중이면 { t:current frame time, ev:[Sound events] } — record timing instead of playing Sound immediately 시각만 기록
+let offl = null;             // 영상 저장 중이면 { t:current frame time, ev:[Sound events] } — record timing instead of playing Sound immediately
 function schedClip(c, dest, t, buf, offset, dur, gain, pan, fade, rate){
   const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
   const real = dur / rate, gn = c.createGain(); gn.gain.setValueAtTime(gain, t);
@@ -636,7 +636,7 @@ function simStep(dt){
   stepParticles(dt); render();
 }
 function tick(now){
-  if (offl){ looping = false; return; }          // 영상 저장 중에는 따로 계산하므로 실시간 루프는 멈춤
+  if (offl){ looping = false; return; }          // pause the realtime loop during video export
   const dt = Math.min(rec ? .25 : .05, (now - S.last) / 1000); S.last = now;
   const was = S.playing;
   simStep(dt);
@@ -746,7 +746,7 @@ function drawFrame(c, sc = dpr){
     c.fillStyle = g; c.fillRect(chocX, top, cl, hh);
     g = c.createLinearGradient(0, top, 0, top + hh); g.addColorStop(0, '#f3cf8c'); g.addColorStop(1, '#e6b46a');
     c.fillStyle = g; c.fillRect(ckX, top, ckW, hh);
-    // Chocolate sprinkles(스프링클) — CSS 배경과 같은 패턴
+    // Chocolate sprinkles — matching the CSS background pattern
     c.save(); c.beginPath(); c.rect(chocX, top, cl, hh); c.clip();
     const dots = (tw, th, ox, oy, fx_, fy_, col) => {
       c.fillStyle = col;
