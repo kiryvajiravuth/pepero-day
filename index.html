@@ -588,7 +588,7 @@ function render(){
   const [eA, eB] = edges(), pa = S.cp.A, pb = S.cp.B, k = S.k;
   updateTimeline('A', S.t); updateTimeline('B', S.t);
   stick.style.clipPath = `inset(-6px ${len * (1 - m) * pb}px -6px ${len * m * pa}px)`;
-  stick.style.visibility = pa >= 1 && pb >= 1 ? 'hidden' : 'visible';
+  stick.style.visibility = k >= 1 ? 'hidden' : 'visible';
   const eating = S.playing && (pa < 1 || pb < 1);
   S.bob.A = eating && !paused.A && pa < 1 && bop.A ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0;
   S.bob.B = eating && !paused.B && pb < 1 && bop.B ? -Math.abs(Math.sin(S.t * 11)) * 5 : 0; S.tilt = 0;
@@ -634,7 +634,8 @@ function simStep(dt){
         S.cAcc = 0; S.cNext = .65 + Math.random() * .45;
       }
     }
-    if (S.cp.A >= 1 && S.cp.B >= 1){ S.k = 1; S.playing = false; stopBgm(); setPlayBtn(false); }
+    const [touchA, touchB] = edges();
+    if (touchA >= touchB || (S.cp.A >= 1 && S.cp.B >= 1)){ S.k = 1; S.playing = false; stopBgm(); setPlayBtn(false); }
   }
   if (S.popped) S.hopT += dt;
   stepParticles(dt); render();
@@ -740,7 +741,7 @@ function drawFrame(c, sc = dpr){
   c.fillStyle = bgColor; c.fillRect(0, 0, W, H);
   c.fillStyle = floorColor; c.fillRect(0, H - FLOOR, W, FLOOR);
   drawBackdrop(c, sc);
-  if (S.cp.A < 1 || S.cp.B < 1){
+  if (S.k < 1){
     const [eA, eB] = edges(), top = stick.offsetTop, hh = stick.offsetHeight;
     c.save(); c.beginPath(); c.rect(eA, top - 6, eB - eA, hh + 12); c.clip();
     c.fillStyle = 'rgba(0,0,0,.15)'; rr(c, xL, top + 3, len, hh, hh / 2); c.fill();   // shadow
